@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { rpc } from "./db";
 import { env, paymentMode } from "./env";
 import { AppError } from "./errors";
+import { estimateAndStore } from "./prediction";
 import { broadcast, canteenSignal, orderSignal } from "./realtime";
 import type { PaymentInfo } from "./payment-info";
 import type { Order } from "./types";
@@ -98,8 +99,13 @@ export async function failPayment(gatewayOrderId: string, reason: string) {
   return r;
 }
 
-/** Token and bill created (UPI or cash): tell every screen. */
+/** Token and bill created (UPI or cash): store the time estimate, then tell every screen. */
 export async function afterTokenCreated(orderId: string, canteenId: string, status: string) {
+  try {
+    await estimateAndStore(orderId);
+  } catch (e) {
+    console.warn("[prediction] estimate failed", (e as Error).message);
+  }
   await broadcast([
     canteenSignal(canteenId, "orders_changed"),
     canteenSignal(canteenId, "menu_changed"),

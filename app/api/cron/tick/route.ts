@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { rpc } from "@/lib/db";
 import { env } from "@/lib/env";
 import { handle, safeEqual } from "@/lib/http";
+import { mlHasModel, retrainModel } from "@/lib/prediction";
 import { broadcast, canteenSignal, orderSignal } from "@/lib/realtime";
 
 interface TickResult {
@@ -31,5 +32,12 @@ export const POST = handle(async (req: Request) => {
     ...r.expired.map((id) => orderSignal(id, "EXPIRED")),
   ]);
 
-  return NextResponse.json(r);
+  // Auto-retrain after every ml_retrain_every_orders newly completed orders (and once at start, if the
+  // ML service has no model yet, so it learns from the sample history).
+  let retrained: boolean | null = null;
+  if (r.retrain_due || (await mlHasModel()) === false) {
+    retrained = await retrainModel(r.completed_orders);
+  }
+
+  return NextResponse.json({ ...r, retrained });
 });
