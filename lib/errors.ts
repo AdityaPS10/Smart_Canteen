@@ -58,7 +58,7 @@ export class AppError extends Error {
       const detail = err.details ?? undefined;
       let msg = MESSAGES[code] ?? code;
       if (code === "BAD_REQUEST" && detail) msg = detail;
-      if (code === "SOLD_OUT" && detail) msg = `Sorry, ${detail} just sold out. Your cart was updated.`;
+      if (code === "SOLD_OUT" && detail) msg = `Sorry, not enough ${detail} left. The menu was refreshed; please update your cart.`;
       if (code === "ITEM_UNAVAILABLE" && detail) msg = `${detail} is no longer on the menu. Your cart was updated.`;
       return new AppError(code, STATUS[code], msg, detail);
     }

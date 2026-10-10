@@ -61,6 +61,50 @@ export async function expectDbError(p: Promise<unknown>, code: string) {
   throw new Error(`expected ${code}, but the call succeeded`);
 }
 
+/** Gives a student a valid entrance check-in through the real functions. */
+export async function checkIn(db: PGlite, studentId: string) {
+  const code = await one<{ id: string }>(db, "select * from rotate_entrance_code($1, gen_random_uuid(), 'tok')", [CANTEEN]);
+  await db.query("select validate_entrance_scan($1, $2, $3)", [CANTEEN, code.id, studentId]);
+}
+
+type Lines = Array<Record<string, unknown>>;
+
+export async function placeOrder(db: PGlite, studentId: string, items: Lines, requestId: string | null = null) {
+  const r = await one<{ r: { order_id: string; created: boolean; total_paise: number; status: string } }>(
+    db,
+    "select place_order($1, $2, $3::jsonb, $4) as r",
+    [CANTEEN, studentId, JSON.stringify(items), requestId],
+  );
+  return r.r;
+}
+
+/** Starts a payment attempt and returns its gateway order id. */
+export async function startAttempt(db: PGlite, orderId: string, studentId: string) {
+  const gid = `mock_${crypto.randomUUID()}`;
+  await db.query("select start_payment_attempt($1, $2, $3)", [orderId, studentId, gid]);
+  return gid;
+}
+
+export async function confirm(db: PGlite, gid: string, paymentId: string, amount: number) {
+  return (
+    await one<{ r: { result: string; status?: string; token_number?: number } }>(
+      db,
+      "select confirm_payment($1, $2, $3) as r",
+      [gid, paymentId, amount],
+    )
+  ).r;
+}
+
+export async function fail(db: PGlite, gid: string) {
+  return (
+    await one<{ r: { result: string; status: string; attempts_left: number } }>(db, "select fail_payment($1, 'test') as r", [gid])
+  ).r;
+}
+
+export async function stockOf(db: PGlite, itemId: string) {
+  return (await one<{ stock_count: number }>(db, "select stock_count from menu_items where id=$1", [itemId])).stock_count;
+}
+
 /** Inserts an order directly (bypassing checks) for testing state machines. */
 export async function insertOrder(
   db: PGlite,
