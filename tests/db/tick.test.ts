@@ -78,6 +78,24 @@ describe("the 10-minute rule", () => {
     expect(await rows(db, "select 1 from wasted_items")).toHaveLength(0);
   });
 
+  it("broadcasts from SQL via realtime.send() when it exists (pg_cron path), with no personal data", async () => {
+    await db.exec(`
+      create schema if not exists realtime;
+      create table realtime.sent (topic text, event text, payload jsonb);
+      create function realtime.send(payload jsonb, event text, topic text, private boolean) returns void
+        language sql as $$ insert into realtime.sent values (topic, event, payload) $$;`);
+    const id = await readyOrder();
+    await setNow(db, at("10:00"));
+    await tick();
+    const sent = await rows<{ topic: string; event: string; payload: Record<string, unknown> }>(db, "select * from realtime.sent order by topic, event");
+    expect(sent.map((s) => `${s.topic} ${s.event}`)).toEqual([
+      `canteen:${CANTEEN} menu_changed`,
+      `canteen:${CANTEEN} orders_changed`,
+      `order:${id} order_changed`,
+    ]);
+    expect(sent[2].payload).toEqual({ status: "EXPIRED" });
+  });
+
   it("is idempotent: running twice at the same time changes nothing more", async () => {
     await readyOrder();
     await setNow(db, at("10:00"));

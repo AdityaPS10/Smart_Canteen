@@ -13,7 +13,7 @@ language sql stable as $$
   join orders o on o.id = oi.order_id
   join menu_items m on m.id = oi.menu_item_id
   where o.canteen_id = p_canteen_id and o.status in ('PAID', 'PREPARING') and oi.status <> 'ready'
-  order by o.paid_at, oi.id
+  order by o.paid_at, o.token_number, oi.id
 $$;
 
 -- "Start cooking": the given items become preparing and their orders PREPARING.
@@ -90,7 +90,7 @@ end $$;
 -- Food-server table: TOKEN ID | Items | Qty | Marked as done
 create or replace function counter_orders(p_canteen_id uuid) returns jsonb
 language sql stable as $$
-  select coalesce(jsonb_agg(x order by x.sort_ready, x.paid_at), '[]'::jsonb) from (
+  select coalesce(jsonb_agg(x order by x.sort_ready, x.paid_at, x.token_number), '[]'::jsonb) from (
     select o.id, o.token_number, o.status, o.paid_at, o.ready_at, o.source,
            case when o.status = 'READY' then 0 else 1 end as sort_ready,
            (select jsonb_agg(jsonb_build_object('name', oi.name_snapshot, 'quantity', oi.quantity, 'status', oi.status)
@@ -105,9 +105,9 @@ $$;
 create or replace function tv_board(p_canteen_id uuid) returns jsonb
 language sql stable as $$
   select jsonb_build_object(
-    'in_queue', coalesce((select jsonb_agg(token_number order by paid_at) from orders
+    'in_queue', coalesce((select jsonb_agg(token_number order by paid_at, token_number) from orders
                           where canteen_id = p_canteen_id and status in ('PAID', 'PREPARING')), '[]'::jsonb),
-    'ready',    coalesce((select jsonb_agg(token_number order by ready_at) from orders
+    'ready',    coalesce((select jsonb_agg(token_number order by ready_at, token_number) from orders
                           where canteen_id = p_canteen_id and status = 'READY'), '[]'::jsonb)
   )
 $$;

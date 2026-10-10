@@ -53,8 +53,24 @@ Decisions made where `spec.md` / the blueprint were silent or ambiguous. Each on
 - Features are snapshotted into the `paid` order event (`order_events.meta`) so training uses the values seen at payment time.
 - `estimate_source` (`formula` | `ml` | `ml_sample`) is stored next to `estimated_minutes`; `ml_sample` means more than half of
   the training rows are sample data and the UI shows "estimate (sample data)".
-- Sample history is stored as past GIVEN orders (past service dates) with `is_sample=true` events.
+- Sample history is stored as 300 past GIVEN orders (previous 14 days, `source='cashier'`, `customer_name='sample'`,
+  no payment rows, so they never appear in the payments log) whose events have `is_sample=true`.
 - The ML service has no database access; `/api/cron/tick` pulls training rows via an RPC and posts them to `/train`.
+  The tick also trains once when the service reports it has no model yet, so the first model learns from the sample
+  history. The service refuses to train on fewer than 10 rows; the app uses the model only when it was trained on at
+  least `ml_min_samples` rows.
+- "Number of items in the order" = total quantity. Ready-made items count as zero prep and are not "units ahead".
+
+## Realtime
+- Broadcasts go through Supabase's REST broadcast endpoint from route handlers, on *public* channels whose payload is
+  only a status or timestamp. Browsers listen with the anon key and refetch through the authenticated API.
+- When pg_cron runs `process_tick()` on its own, the function broadcasts the same signals from SQL with Supabase's
+  `realtime.send()` (best-effort; skipped where that function does not exist). When `/api/cron/tick` runs it, the
+  route broadcasts as well; the duplicate only causes one extra refetch.
+
+## Testing
+- API tests run the real route handlers against PGlite through a small shim that emulates PostgREST `rpc()`
+  (`tests/helpers/rpc-shim.ts`); Auth.js sessions are mocked. Network calls (Realtime, ML) are stubbed.
 
 ## Misc
 - Settings are global (one canteen in the prototype), stored as text and read as integers.

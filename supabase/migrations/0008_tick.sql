@@ -2,6 +2,20 @@
 -- PENDING_PAYMENT timeouts. Idempotent and safe to run twice (every step is conditional on current state,
 -- rows are locked with SKIP LOCKED so two concurrent runs never process the same row).
 
+-- Best-effort Supabase Realtime broadcast from SQL (used when pg_cron runs the tick without the app).
+-- Does nothing where realtime.send() does not exist (e.g. plain Postgres); never fails the caller.
+create or replace function _notify(p_topic text, p_event text, p_payload jsonb) returns void
+language plpgsql as $$
+begin
+  if to_regprocedure('realtime.send(jsonb,text,text,boolean)') is not null then
+    begin
+      execute 'select realtime.send($1, $2, $3, false)' using p_payload, p_event, p_topic;
+    exception when others then
+      null;
+    end;
+  end if;
+end $$;
+
 create or replace function process_tick() returns jsonb
 language plpgsql as $$
 declare
@@ -90,6 +104,18 @@ begin
   where o2.ready_at is not null and o2.paid_at is not null
     and not exists (select 1 from order_events e where e.order_id = o2.id and e.is_sample);
   v_trained := setting_int('ml_trained_ready_count');
+
+  -- 5. Tell the screens (no personal data). The /api/cron/tick route also broadcasts; duplicates only cause a refetch.
+  for r in select distinct unnest(v_canteens) as id loop
+    perform _notify('canteen:' || r.id, 'orders_changed', jsonb_build_object('source', 'tick'));
+    perform _notify('canteen:' || r.id, 'menu_changed', jsonb_build_object('source', 'tick'));
+  end loop;
+  for r in select unnest(v_failed) as id loop
+    perform _notify('order:' || r.id, 'order_changed', jsonb_build_object('status', 'PAYMENT_FAILED'));
+  end loop;
+  for r in select unnest(v_expired) as id loop
+    perform _notify('order:' || r.id, 'order_changed', jsonb_build_object('status', 'EXPIRED'));
+  end loop;
 
   return jsonb_build_object(
     'payment_timeouts', to_jsonb(v_failed),

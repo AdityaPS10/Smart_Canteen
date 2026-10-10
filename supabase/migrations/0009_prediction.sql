@@ -30,7 +30,8 @@ begin
   join orders x on x.id = oi.order_id
   join menu_items m on m.id = oi.menu_item_id
   where x.canteen_id = o.canteen_id and x.status in ('PAID', 'PREPARING') and x.id <> o.id
-    and (x.paid_at < o.paid_at or (x.paid_at = o.paid_at and x.id < o.id))
+    -- paid earlier; the same instant is broken by token number (assigned atomically in payment order)
+    and (x.paid_at < o.paid_at or (x.paid_at = o.paid_at and x.token_number < o.token_number))
     and oi.status <> 'ready' and not m.ready_made;
 
   select coalesce(sum(oi.quantity), 0),
