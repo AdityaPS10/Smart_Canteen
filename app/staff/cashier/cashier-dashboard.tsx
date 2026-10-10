@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { CashOrder } from "./cash-order";
 import { MenuEditor } from "./menu-editor";
+import { PaymentsLog } from "./payments-log";
 
 const TABS = [
+  { id: "order", label: "New cash order" },
   { id: "menu", label: "Menu & stock" },
+  { id: "payments", label: "Payments" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -30,7 +34,9 @@ export function CashierDashboard({ canteenId }: { canteenId: string }) {
           </button>
         ))}
       </div>
+      {tab === "order" && <CashOrder canteenId={canteenId} />}
       {tab === "menu" && <MenuEditor canteenId={canteenId} />}
+      {tab === "payments" && <PaymentsLog canteenId={canteenId} />}
     </div>
   );
 }
