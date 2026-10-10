@@ -87,7 +87,7 @@ export function MenuClient({ canteenId }: { canteenId: string }) {
             <span>Scan the QR on the display at the canteen entrance, or order at the cashier.</span>
             <Button
               className="self-start"
-              onClick={() => router.push(`/scan?next=${encodeURIComponent(`/checkout?canteen=${canteenId}`)}`)}
+              onClick={() => router.push(`/scan?canteen=${canteenId}`)}
             >
               <QrCode /> Scan
             </Button>
