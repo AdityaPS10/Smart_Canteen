@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "seed:qr": "node scripts/seed-qr.mjs",
-    "cron": "node scripts/cron-loop.mjs"
+    "cron": "node --env-file-if-exists=.env.local scripts/cron-loop.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",

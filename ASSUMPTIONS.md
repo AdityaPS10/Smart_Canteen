@@ -42,9 +42,10 @@ Decisions made where `spec.md` / the blueprint were silent or ambiguous. Each on
 - Start/Mark-ready act on exactly the order items shown in that row (ids sent by the kitchen screen, re-checked on the server).
 
 ## 10-minute rule
-- When an order expires, each item gets `disposition_due_at = expired_at + post_expiry_wait_minutes`, plus
-  `spare_pool_extra_wait_minutes` if the item `holds_well` (the "Holds well?" answer is read at the moment of expiry).
-  When the due time passes, the tick moves the item to `spare_pool` (holds well) or `wasted_items` (does not).
+- Follows the flowchart literally using only `disposition_due_at`: when an order expires each item gets
+  `disposition_due_at = expired_at + post_expiry_wait_minutes` ("Wait 10 minutes"). When that passes, the tick asks
+  "Holds well?" (current `menu_items.holds_well`): NO → `wasted_items` now; YES → `disposition_due_at` is pushed back by
+  `spare_pool_extra_wait_minutes` ("wait some more time") and the next tick after that adds it to `spare_pool`.
 - pg_cron runs `process_tick()` every minute when the extension is available. Realtime broadcasts and ML retraining are
   triggered by `POST /api/cron/tick`; `npm run cron` calls that route every 60 s for local demos. Screens also poll every 5 s.
 
