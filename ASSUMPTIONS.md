@@ -72,6 +72,24 @@ Decisions made where `spec.md` / the blueprint were silent or ambiguous. Each on
 - API tests run the real route handlers against PGlite through a small shim that emulates PostgREST `rpc()`
   (`tests/helpers/rpc-shim.ts`); Auth.js sessions are mocked. Network calls (Realtime, ML) are stubbed.
 
+## UI pass (branch `theme-changed`)
+- The brief said the tweakcn theme was already in `app/globals.css` / `app/layout.tsx`, but it was not; `UI_SPRC.md`
+  turned out to be the theme-setup spec (tweakcn tokens, fonts, status tokens, light/dark per screen) rather than a
+  per-screen design spec with a DESIGN TOKENS section. So the theme was applied from `UI_SPRC.md` first, and the
+  screens were restyled using the shared components listed in `UI_PLAN.md`.
+- Fonts: Geist (sans) and Geist Mono via `next/font/google`; Georgia (serif) is a system font, so it is only in the CSS
+  stack. Token numbers use the `token-num` utility (Geist 900, tabular numerals).
+- The theme's `--destructive` (#e54b4f on white, about 3.9:1) is below 4.5:1, so destructive buttons, badges and alerts
+  use the new `--danger` token instead. The theme value itself is unchanged.
+- Status tokens: success #15803d / white, warning #f59e0b / black, danger #c62828 / white (light); success #22c55e,
+  warning #fbbf24, danger #f87171, all with black text (dark).
+- The entrance QR is drawn in `currentColor` on a `bg-foreground` panel, so it stays dark-on-light (scannable) on the
+  dark display without hardcoded colours.
+- The optional `menu_items.image_url` column was not added: no screen needs it yet.
+- On phones, the cashier tabs show short labels (Order / Menu / Payments; full names stay as accessible names) and the
+  payments log shows "So far" for "Running total". The counter keeps the spec's columns on tablet/desktop and stacks
+  each order as a card on phones.
+
 ## Misc
 - Settings are global (one canteen in the prototype), stored as text and read as integers.
 - Token numbers restart at 1 per canteen per Asia/Kolkata day.

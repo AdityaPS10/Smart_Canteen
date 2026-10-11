@@ -132,6 +132,21 @@ npm test
 cd ml && .venv/Scripts/python -m pytest -q
 ```
 
+Browser checks (app running, `DEMO_MODE=true`, `PAYMENT_MODE=mock`; first run `npx playwright install chromium`).
+The main flow end to end (student, entrance QR, mock pay, kitchen ready, food server done):
+
+```bash
+node --env-file=.env.local scripts/e2e-flow.mjs
+```
+
+Screenshots of a screen group (`a` student, `b` staff, `c` displays) at 390 / 1024 / 1920 px, with a report of
+horizontal scroll and text under 14 px. Group `b` creates two cash orders for content and closes them afterwards;
+set `SKIP_SETUP=1` to skip that.
+
+```bash
+node --env-file=.env.local scripts/ui-screenshots.mjs a screenshots
+```
+
 ## Screens
 
 | Who | URL |

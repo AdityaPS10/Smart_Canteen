@@ -36,7 +36,13 @@ const SCREENS = {
     { name: "kitchen", path: "/staff/kitchen", role: "food server" },
   ],
   c: [
-    { name: "tv-board", path: `/tv/board?canteen=${CANTEEN}&key=${KEY}` },
+    { name: "tv-board-empty", path: `/tv/board?canteen=${CANTEEN}&key=${KEY}` },
+    {
+      name: "tv-board",
+      path: `/tv/board?canteen=${CANTEEN}&key=${KEY}`,
+      // Sample tokens via request mocking, so no real orders are created for the screenshot.
+      mock: { url: "**/api/tv/board**", body: { in_queue: [14, 15, 16, 18, 19, 21, 22], ready: [11, 12, 13] } },
+    },
     { name: "tv-menu", path: `/tv/menu?canteen=${CANTEEN}&key=${KEY}` },
     { name: "entrance", path: `/entrance?canteen=${CANTEEN}&key=${KEY}` },
   ],
@@ -98,6 +104,7 @@ for (const screen of SCREENS[group]) {
   for (const width of WIDTHS) {
     const ctx = await contextFor(screen.role, width);
     const page = await ctx.newPage();
+    if (screen.mock) await page.route(screen.mock.url, (r) => r.fulfill({ json: screen.mock.body }));
     if (screen.slowApi) await page.route("**/api/menu**", async (r) => { await new Promise((x) => setTimeout(x, 4000)); await r.continue(); });
     await page.addInitScript(
       ([canteen, withCart]) => {
