@@ -61,6 +61,38 @@ async function contextFor(role, width) {
   return ctx;
 }
 
+// Group b needs open orders so the kitchen and counter have content. They are cleaned up at the end.
+const created = [];
+async function setupStaffData() {
+  const cashier = await contextFor("cashier", WIDTHS[1]);
+  for (const items of [
+    [{ menu_item_id: "00000000-0000-4000-8000-000000001004", quantity: 2 }, { menu_item_id: "00000000-0000-4000-8000-000000001007", quantity: 1 }],
+    [{ menu_item_id: "00000000-0000-4000-8000-000000001006", quantity: 1 }],
+  ]) {
+    const r = await cashier.request.post(`${BASE}/api/cashier/orders`, {
+      data: { items, client_request_id: crypto.randomUUID(), customer_name: "Screenshot" },
+    });
+    const body = await r.json();
+    if (!r.ok()) throw new Error(`setup failed: ${JSON.stringify(body)}`);
+    created.push(body.order.id);
+  }
+  // make the second order READY so the counter shows both states
+  const server = await contextFor("food server", WIDTHS[1]);
+  const batches = await (await server.request.get(`${BASE}/api/kitchen/batches`)).json();
+  const idli = batches.batches.find((b) => b.name.startsWith("Idli"));
+  if (idli) await server.request.post(`${BASE}/api/kitchen/ready`, { data: { order_item_ids: idli.order_item_ids } });
+}
+async function cleanupStaffData() {
+  const server = await contextFor("food server", WIDTHS[1]);
+  const batches = await (await server.request.get(`${BASE}/api/kitchen/batches`)).json();
+  for (const b of batches.batches.filter((b) => b.order_ids.some((id) => created.includes(id)))) {
+    await server.request.post(`${BASE}/api/kitchen/ready`, { data: { order_item_ids: b.order_item_ids } });
+  }
+  for (const id of created) await server.request.post(`${BASE}/api/counter/done`, { data: { order_id: id } });
+}
+const withSetup = group === "b" && !process.env.SKIP_SETUP;
+if (withSetup) await setupStaffData();
+
 const problems = [];
 for (const screen of SCREENS[group]) {
   for (const width of WIDTHS) {
@@ -114,5 +146,6 @@ for (const screen of SCREENS[group]) {
   }
 }
 
+if (withSetup) await cleanupStaffData();
 console.log(problems.length ? `\nPROBLEMS (${problems.length}):\n` + problems.join("\n") : "\nNo layout problems found.");
 await browser.close();

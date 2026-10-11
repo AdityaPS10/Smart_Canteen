@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppHeader } from "@/components/app-header";
+import { PageHeader } from "@/components/page-header";
 import { CounterTable } from "./counter-table";
 
 export const dynamic = "force-dynamic";
@@ -16,8 +17,12 @@ export default async function CounterPage() {
           { href: "/staff/kitchen", label: "Kitchen" },
         ]}
       />
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        <h1 className="mb-4 text-2xl font-bold">Food server</h1>
+      <main className="mx-auto flex max-w-5xl flex-col gap-5 px-4 py-6 sm:py-8">
+        <PageHeader
+          eyebrow="Food server"
+          title="Counter"
+          description="Find the student's token and press Marked as done when you hand the food over."
+        />
         <CounterTable canteenId={session.user.canteenId} />
       </main>
     </>

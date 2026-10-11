@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Save } from "lucide-react";
+import { ClipboardList, Loader2, Plus, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EmptyState } from "@/components/empty-state";
 import { fetchJson, useLiveData } from "@/hooks/use-live-data";
-import { formatPaise, parseRupeesToPaise } from "@/lib/utils";
+import { cn, formatPaise, parseRupeesToPaise } from "@/lib/utils";
 import type { MenuItem } from "@/lib/types";
 
 async function send(method: "POST" | "PATCH", body: unknown) {
@@ -45,34 +47,72 @@ export function MenuEditor({ canteenId }: { canteenId: string }) {
           await reload();
         }}
       />
-      {message && <p className="text-sm text-destructive">{message}</p>}
+      {message && (
+        <Alert variant="destructive">
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Menu and stock</CardTitle>
+          <CardDescription>Edit price, count and prep time, then Save. Switches apply at once.</CardDescription>
         </CardHeader>
-        <CardContent>
-          {error && !data && <p className="text-destructive">{error.message}</p>}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Dish</TableHead>
-                <TableHead>Price (₹)</TableHead>
-                <TableHead>Count</TableHead>
-                <TableHead>Prep min</TableHead>
-                <TableHead>Ready made</TableHead>
-                <TableHead>Holds well</TableHead>
-                <TableHead>On menu</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(data?.items ?? []).map((item) => (
-                <MenuRow key={item.id + item.stock_count + item.price_paise + item.prep_minutes} item={item} onPatch={patch} />
+        <CardContent className="flex flex-col gap-3">
+          {error && !data && (
+            <Alert variant="destructive">
+              <AlertDescription>{error.message}</AlertDescription>
+            </Alert>
+          )}
+          {!data && !error && (
+            <div className="flex flex-col gap-2">
+              {Array.from({ length: 5 }, (_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
               ))}
-            </TableBody>
-          </Table>
+            </div>
+          )}
+          {data && data.items.length === 0 && (
+            <EmptyState icon={<ClipboardList />} title="No dishes yet" description="Add the first dish above." />
+          )}
+          {data && data.items.length > 0 && (
+            <div className={cn(ROW_GRID, "hidden border-b pb-2 text-sm font-medium text-muted-foreground lg:grid")}>
+              <span>Dish</span>
+              <span>Price (₹)</span>
+              <span>Count</span>
+              <span>Prep min</span>
+              <span className="text-center">Ready made</span>
+              <span className="text-center">Holds well</span>
+              <span className="text-center">On menu</span>
+              <span />
+            </div>
+          )}
+          <div className="flex flex-col gap-3 lg:gap-0 lg:divide-y">
+            {(data?.items ?? []).map((item) => (
+              <MenuRow key={item.id + item.stock_count + item.price_paise + item.prep_minutes} item={item} onPatch={patch} />
+            ))}
+          </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+/** One layout for header and rows on large screens; rows become cards on small screens. */
+const ROW_GRID = "lg:grid-cols-[minmax(9rem,1.5fr)_7rem_6rem_5.5rem_6rem_6rem_6rem_6.5rem] lg:items-center lg:gap-3";
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-sm text-muted-foreground lg:sr-only">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function Toggle({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-md bg-muted px-2 py-2.5 lg:bg-transparent lg:p-0">
+      <span className="whitespace-nowrap text-sm lg:sr-only">{label}</span>
+      {children}
     </div>
   );
 }
@@ -97,52 +137,56 @@ function MenuRow({ item, onPatch }: { item: MenuItem; onPatch: (b: Partial<MenuI
   }
 
   return (
-    <TableRow>
-      <TableCell className="font-medium">
-        <div className="flex flex-col gap-1">
-          {item.name}
-          {item.stock_count === 0 && <Badge variant="destructive" className="w-fit">Sold out</Badge>}
-        </div>
-      </TableCell>
-      <TableCell>
-        <Input className="w-24" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
-      </TableCell>
-      <TableCell>
-        <Input className="w-20" inputMode="numeric" value={count} onChange={(e) => setCount(e.target.value)} />
-      </TableCell>
-      <TableCell>
+    <div
+      className={cn(
+        ROW_GRID,
+        "grid grid-cols-3 gap-3 rounded-lg border p-4 lg:rounded-none lg:border-0 lg:px-0 lg:py-3",
+        !item.active && "opacity-70",
+      )}
+    >
+      <div className="col-span-3 flex flex-wrap items-center gap-2 lg:col-span-1">
+        <span className="font-semibold">{item.name}</span>
+        {item.stock_count === 0 && <Badge variant="destructive">Sold out</Badge>}
+        {!item.active && <Badge variant="outline">Hidden</Badge>}
+      </div>
+      <Field label="Price (₹)">
+        <Input inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} aria-label={`${item.name} price`} />
+      </Field>
+      <Field label="Count">
+        <Input inputMode="numeric" value={count} onChange={(e) => setCount(e.target.value)} aria-label={`${item.name} count`} />
+      </Field>
+      <Field label="Prep min">
         <Input
-          className="w-16"
           inputMode="numeric"
           value={prep}
           disabled={item.ready_made}
           onChange={(e) => setPrep(e.target.value)}
+          aria-label={`${item.name} prep minutes`}
         />
-      </TableCell>
-      <TableCell>
+      </Field>
+      <Toggle label="Ready made">
         <Switch
           aria-label="Ready made"
           checked={item.ready_made}
           disabled={busy}
           onCheckedChange={(v) => run(v ? { ready_made: true, prep_minutes: 0 } : { ready_made: false })}
         />
-      </TableCell>
-      <TableCell>
+      </Toggle>
+      <Toggle label="Holds well">
         <Switch aria-label="Holds well" checked={item.holds_well} disabled={busy} onCheckedChange={(v) => run({ holds_well: v })} />
-      </TableCell>
-      <TableCell>
+      </Toggle>
+      <Toggle label="On menu">
         <Switch aria-label="On menu" checked={item.active} disabled={busy} onCheckedChange={(v) => run({ active: v })} />
-      </TableCell>
-      <TableCell>
-        <Button
-          size="sm"
-          disabled={!dirty || !valid || busy}
-          onClick={() => run({ price_paise: pricePaise!, stock_count: countNum!, prep_minutes: prepNum! })}
-        >
-          <Save /> Save
-        </Button>
-      </TableCell>
-    </TableRow>
+      </Toggle>
+      <Button
+        className="col-span-3 lg:col-span-1"
+        variant={dirty ? "default" : "outline"}
+        disabled={!dirty || !valid || busy}
+        onClick={() => run({ price_paise: pricePaise!, stock_count: countNum!, prep_minutes: prepNum! })}
+      >
+        <Save /> Save
+      </Button>
+    </div>
   );
 }
 
@@ -214,20 +258,20 @@ function AddDishForm({ onAdded }: { onAdded: () => Promise<void> }) {
               onChange={(e) => setPrep(e.target.value)}
             />
           </div>
-          <Button type="submit" disabled={busy}>
-            <Plus /> Add
+          <Button type="submit" className="order-last col-span-2 md:order-none md:col-span-1" disabled={busy}>
+            {busy ? <Loader2 className="animate-spin" /> : <Plus />} Add dish
           </Button>
-          <div className="col-span-2 flex flex-wrap gap-6 md:col-span-6">
-            <label className="flex items-center gap-2 text-sm">
+          <div className="col-span-2 flex flex-wrap gap-x-6 gap-y-3 md:col-span-6">
+            <label className="flex items-center gap-2 text-sm font-medium">
               <Switch checked={readyMade} onCheckedChange={setReadyMade} aria-label="Ready made" /> Ready made
             </label>
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-sm font-medium">
               <Switch checked={holdsWell} onCheckedChange={setHoldsWell} aria-label="Holds well" /> Holds well
             </label>
           </div>
-          {error && <p className="col-span-2 text-sm text-destructive md:col-span-6">{error}</p>}
+          {error && <p className="col-span-2 text-sm font-medium text-danger md:col-span-6">{error}</p>}
           {price && parseRupeesToPaise(price) !== null && (
-            <p className="col-span-2 text-xs text-muted-foreground md:col-span-6">
+            <p className="col-span-2 text-sm text-muted-foreground md:col-span-6">
               Price: {formatPaise(parseRupeesToPaise(price)!)}
             </p>
           )}

@@ -2,15 +2,23 @@ import Link from "next/link";
 import { LogOut, UtensilsCrossed } from "lucide-react";
 import { auth, signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const ROLE_LABEL = { student: "Student", food_server: "Food server", cashier: "Cashier" } as const;
 
-export async function AppHeader({ links = [] }: { links?: Array<{ href: string; label: string }> }) {
+export async function AppHeader({
+  links = [],
+  wide = false,
+}: {
+  links?: Array<{ href: string; label: string }>;
+  /** Match full-width screens such as the kitchen display. */
+  wide?: boolean;
+}) {
   const session = await auth();
   const user = session?.user;
   return (
     <header className="sticky top-0 z-20 border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4">
+      <div className={cn("mx-auto flex h-14 max-w-6xl items-center gap-4 px-4", wide && "max-w-7xl 2xl:max-w-[110rem]")}>
         <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
           <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <UtensilsCrossed className="size-4" aria-hidden />

@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Inbox, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { StatusBadge } from "@/components/status-badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EmptyState } from "@/components/empty-state";
+import { StatusChip } from "@/components/status-chip";
+import { TokenChip } from "@/components/token-chip";
 import { fetchJson, useLiveData } from "@/hooks/use-live-data";
 import { cn } from "@/lib/utils";
 import type { OrderStatus } from "@/lib/types";
@@ -43,64 +45,115 @@ export function CounterTable({ canteenId }: { canteenId: string }) {
     }
   }
 
+  const orders = data?.orders ?? [];
+  const readyCount = orders.filter((o) => o.status === "READY").length;
+
   return (
-    <Card className="p-2">
-      {message && <p className="p-2 text-sm text-destructive">{message}</p>}
-      {error && !data && <p className="p-2 text-destructive">{error.message}</p>}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>TOKEN ID</TableHead>
-            <TableHead>Items</TableHead>
-            <TableHead className="text-right">Qty</TableHead>
-            <TableHead className="text-right">Marked as done</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data?.orders.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
-                No orders waiting.
-              </TableCell>
-            </TableRow>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap gap-3 text-sm">
+        <span className="inline-flex items-center gap-2 rounded-full border-2 border-foreground bg-card px-3 py-1 font-semibold">
+          {orders.length} waiting
+        </span>
+        <span className="inline-flex items-center gap-2 rounded-full bg-success px-3 py-1 font-semibold text-success-foreground">
+          {readyCount} ready to hand over
+        </span>
+      </div>
+
+      {message && (
+        <Alert variant="destructive">
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      )}
+      {error && !data && (
+        <Alert variant="destructive">
+          <AlertDescription>{error.message}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="overflow-hidden rounded-xl border-2 border-foreground bg-card">
+        {/* Columns per spec: TOKEN ID | Items | Qty | Marked as done (stacked on phones) */}
+        <div
+          className={cn(
+            COLS,
+            "hidden border-b-2 border-foreground bg-foreground px-4 py-3 text-sm font-semibold uppercase tracking-wide text-background md:grid",
           )}
-          {data?.orders.map((o) => (
-            <TableRow key={o.id} data-order-row className={cn(o.status === "READY" && "bg-success/10")}>
-              <TableCell className="align-top">
-                <div className="text-3xl font-black tabular-nums" aria-label={`Token ${o.token_number}`}>{o.token_number}</div>
-                <StatusBadge status={o.status} />
-              </TableCell>
-              <TableCell className="align-top">
-                <ul>
+          aria-hidden
+        >
+          <span>Token ID</span>
+          <span>Items</span>
+          <span className="text-right">
+            Qty
+          </span>
+          <span className="text-right">
+            Marked as done
+          </span>
+        </div>
+
+        {!data && !error && (
+          <div className="flex flex-col gap-2 p-4">
+            {Array.from({ length: 3 }, (_, i) => (
+              <Skeleton key={i} className="h-20 w-full" />
+            ))}
+          </div>
+        )}
+
+        {data && orders.length === 0 && (
+          <EmptyState
+            className="m-4 border-foreground/40"
+            icon={<Inbox />}
+            title="No orders waiting"
+            description="New paid orders appear here instantly."
+          />
+        )}
+
+        <ul className="divide-y-2 divide-foreground/15">
+          {orders.map((o) => {
+            const ready = o.status === "READY";
+            return (
+              <li
+                key={o.id}
+                data-order-row
+                className={cn(COLS, "grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 px-4 py-4", ready && "bg-success/10")}
+              >
+                <div className="flex flex-col items-start gap-2">
+                  <TokenChip token={o.token_number} size="md" tone={ready ? "success" : "outline"} />
+                  <StatusChip status={o.status} />
+                </div>
+                <ul className="flex flex-col gap-1.5 text-base">
                   {o.items.map((i, idx) => (
-                    <li key={idx} className="py-0.5">
-                      {i.name}
+                    <li key={idx} className="flex justify-between gap-3 font-medium">
+                      <span>{i.name}</span>
+                      <span className="token-num text-lg md:hidden">× {i.quantity}</span>
                     </li>
                   ))}
                 </ul>
-              </TableCell>
-              <TableCell className="text-right align-top">
-                <ul>
+                <ul className="hidden flex-col gap-1.5 text-right md:flex">
                   {o.items.map((i, idx) => (
-                    <li key={idx} className="py-0.5 tabular-nums">
+                    <li key={idx} className="token-num text-lg">
                       {i.quantity}
                     </li>
                   ))}
                 </ul>
-              </TableCell>
-              <TableCell className="text-right align-top">
-                <Button
-                  disabled={o.status !== "READY" || busy !== null}
-                  onClick={() => done(o.id)}
-                  title={o.status === "READY" ? undefined : "Enabled when the order is READY"}
-                >
-                  <Check /> Marked as done
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Card>
+                <div className="col-span-2 flex md:col-span-1 md:justify-end">
+                  <Button
+                    size="lg"
+                    variant={ready ? "success" : "outline"}
+                    className="w-full md:w-auto"
+                    disabled={!ready || busy !== null}
+                    onClick={() => done(o.id)}
+                    title={ready ? undefined : "Enabled when the order is READY"}
+                  >
+                    {busy === o.id ? <Loader2 className="animate-spin" /> : <Check />} Marked as done
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
   );
 }
+
+const COLS = "md:grid-cols-[9rem_1fr_4rem_13rem] md:items-start";
+
