@@ -12,3 +12,4 @@ ml/model.joblib
 ml/model_meta.json
 __pycache__/
 *.pyc
+supabase/setup-all.sql

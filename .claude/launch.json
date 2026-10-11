@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "app",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "ml",
+      "runtimeExecutable": "ml\\.venv\\Scripts\\uvicorn.exe",
+      "runtimeArgs": ["--app-dir", "ml", "app:app", "--port", "8000"],
+      "port": 8000
+    }
+  ]
+}
