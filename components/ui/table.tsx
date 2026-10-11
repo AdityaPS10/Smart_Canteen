@@ -18,24 +18,27 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
 }
 
 function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
-  return <tfoot className={cn("border-t bg-muted/50 font-medium", className)} {...props} />;
+  return <tfoot className={cn("border-t bg-muted/60 font-medium", className)} {...props} />;
 }
 
 function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
-  return <tr className={cn("border-b transition-colors hover:bg-muted/50", className)} {...props} />;
+  return <tr className={cn("border-b transition-colors hover:bg-muted/40", className)} {...props} />;
 }
 
 function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
-      className={cn("h-10 px-3 text-left align-middle font-medium text-muted-foreground whitespace-nowrap", className)}
+      className={cn(
+        "h-11 px-3 text-left align-middle text-sm font-medium text-muted-foreground whitespace-nowrap",
+        className,
+      )}
       {...props}
     />
   );
 }
 
 function TableCell({ className, ...props }: React.ComponentProps<"td">) {
-  return <td className={cn("p-3 align-middle", className)} {...props} />;
+  return <td className={cn("px-3 py-3 align-middle", className)} {...props} />;
 }
 
 export { Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell };

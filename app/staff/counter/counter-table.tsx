@@ -65,9 +65,9 @@ export function CounterTable({ canteenId }: { canteenId: string }) {
             </TableRow>
           )}
           {data?.orders.map((o) => (
-            <TableRow key={o.id} className={cn(o.status === "READY" && "bg-success/10")}>
+            <TableRow key={o.id} data-order-row className={cn(o.status === "READY" && "bg-success/10")}>
               <TableCell className="align-top">
-                <div className="text-3xl font-black tabular-nums">{o.token_number}</div>
+                <div className="text-3xl font-black tabular-nums" aria-label={`Token ${o.token_number}`}>{o.token_number}</div>
                 <StatusBadge status={o.status} />
               </TableCell>
               <TableCell className="align-top">

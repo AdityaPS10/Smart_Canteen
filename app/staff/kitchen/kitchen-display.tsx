@@ -62,7 +62,7 @@ export function KitchenDisplay({ canteenId }: { canteenId: string }) {
           <Card className="p-10 text-center text-muted-foreground">Nothing to cook right now.</Card>
         )}
         {data?.batches.map((b) => (
-          <Card key={b.key} className={b.status === "preparing" ? "border-warning" : undefined}>
+          <Card key={b.key} data-batch className={b.status === "preparing" ? "border-warning" : undefined}>
             <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                 <div className="flex flex-wrap items-baseline gap-2">
@@ -74,7 +74,7 @@ export function KitchenDisplay({ canteenId }: { canteenId: string }) {
                 <div className="flex flex-wrap items-center gap-1.5 text-sm">
                   <span className="text-muted-foreground">Tokens</span>
                   {b.tokens.map((t) => (
-                    <Badge key={t} variant="outline" className="text-sm tabular-nums">
+                    <Badge key={t} variant="outline" className="text-sm tabular-nums" aria-label={`Token ${t}`}>
                       {t}
                     </Badge>
                   ))}

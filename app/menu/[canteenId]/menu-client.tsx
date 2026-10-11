@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { QrCode, ShoppingBag } from "lucide-react";
+import { Loader2, QrCode, ShoppingBag, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { EmptyState } from "@/components/empty-state";
+import { ItemCard, ItemCardSkeleton } from "@/components/item-card";
+import { PageHeader } from "@/components/page-header";
 import { QtyStepper } from "@/components/qty-stepper";
+import { StickyBottomBar } from "@/components/sticky-bottom-bar";
 import { FetchError, fetchJson, useLiveData } from "@/hooks/use-live-data";
 import { cartLines, useCart } from "@/lib/cart";
 import { formatPaise } from "@/lib/utils";
@@ -71,8 +73,8 @@ export function MenuClient({ canteenId }: { canteenId: string }) {
   }
 
   return (
-    <main className="mx-auto flex max-w-2xl flex-col gap-4 px-4 pb-32 pt-6">
-      <h1 className="text-2xl font-bold">Live menu</h1>
+    <main className="mx-auto flex max-w-xl flex-col gap-5 px-4 pb-36 pt-6 md:max-w-4xl">
+      <PageHeader title="Live menu" description="Only dishes in stock are shown. Sold-out items disappear." />
 
       {notice && (
         <Alert variant="warning">
@@ -82,50 +84,66 @@ export function MenuClient({ canteenId }: { canteenId: string }) {
 
       {needsScan && (
         <Alert variant="warning">
-          <AlertTitle>Entrance QR not scanned</AlertTitle>
+          <AlertTitle className="flex items-center gap-2">
+            <QrCode className="size-4" aria-hidden /> Entrance QR not scanned
+          </AlertTitle>
           <AlertDescription className="flex flex-col gap-3">
             <span>Scan the QR on the display at the canteen entrance, or order at the cashier.</span>
-            <Button
-              className="self-start"
-              onClick={() => router.push(`/scan?canteen=${canteenId}`)}
-            >
+            <Button className="self-start" onClick={() => router.push(`/scan?canteen=${canteenId}`)}>
               <QrCode /> Scan
             </Button>
           </AlertDescription>
         </Alert>
       )}
 
-      {error && !data && <p className="text-destructive">{error.message}</p>}
-      {!data && !error && <p className="text-muted-foreground">Loading menu…</p>}
-      {data && items.length === 0 && <p className="text-muted-foreground">Nothing is available right now.</p>}
+      {error && !data && (
+        <Alert variant="destructive">
+          <AlertDescription>{error.message}</AlertDescription>
+        </Alert>
+      )}
 
-      <div className="flex flex-col gap-3">
+      {!data && !error && (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2" aria-label="Loading menu">
+          {Array.from({ length: 6 }, (_, i) => (
+            <ItemCardSkeleton key={i} />
+          ))}
+        </div>
+      )}
+
+      {data && items.length === 0 && (
+        <EmptyState
+          icon={<UtensilsCrossed />}
+          title="Nothing is available right now"
+          description="Dishes appear here as soon as the cashier adds stock."
+        />
+      )}
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {items.map((item) => (
-          <Card key={item.id} className="flex items-center justify-between gap-3 p-4">
-            <div className="flex min-w-0 flex-col">
-              <span className="truncate font-semibold">{item.name}</span>
-              <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                {formatPaise(item.price_paise)}
-                {item.ready_made && <Badge variant="secondary">Ready to pick up</Badge>}
-              </span>
-            </div>
-            <QtyStepper value={cart[item.id] ?? 0} onChange={(q) => setQty(item.id, q)} />
-          </Card>
+          <ItemCard
+            key={item.id}
+            name={item.name}
+            pricePaise={item.price_paise}
+            readyMade={item.ready_made}
+            selected={(cart[item.id] ?? 0) > 0}
+          >
+            <QtyStepper value={cart[item.id] ?? 0} onChange={(q) => setQty(item.id, q)} label={item.name} />
+          </ItemCard>
         ))}
       </div>
 
       {count > 0 && (
-        <div className="fixed inset-x-0 bottom-0 border-t bg-background/95 p-4 backdrop-blur">
-          <div className="mx-auto flex max-w-2xl items-center justify-between gap-3">
-            <div className="flex flex-col">
-              <span className="text-sm text-muted-foreground">{count} item(s)</span>
-              <span className="text-lg font-bold">{formatPaise(displayTotal)}</span>
-            </div>
-            <Button size="lg" onClick={onOrder} disabled={busy}>
-              <ShoppingBag /> Order
-            </Button>
+        <StickyBottomBar innerClassName="md:max-w-4xl">
+          <div className="flex flex-col">
+            <span className="text-sm text-muted-foreground">
+              {count} item{count === 1 ? "" : "s"}
+            </span>
+            <span className="text-xl font-semibold tabular-nums">{formatPaise(displayTotal)}</span>
           </div>
-        </div>
+          <Button size="xl" className="min-w-36" onClick={onOrder} disabled={busy}>
+            {busy ? <Loader2 className="animate-spin" /> : <ShoppingBag />} Order
+          </Button>
+        </StickyBottomBar>
       )}
     </main>
   );

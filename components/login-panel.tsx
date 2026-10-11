@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { QrScanner } from "@/components/qr-scanner";
 
@@ -24,6 +24,16 @@ const DEMO_ROLES = [
 /** Only same-site relative paths are allowed as a post-login destination. */
 function safeCallback(url?: string): string {
   return url && url.startsWith("/") && !url.startsWith("//") ? url : "/landing";
+}
+
+function Divider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+      <span className="h-px flex-1 bg-border" />
+      {label}
+      <span className="h-px flex-1 bg-border" />
+    </div>
+  );
 }
 
 export function LoginPanel({ variant, googleEnabled, demoMode, callbackUrl, error }: LoginPanelProps) {
@@ -48,14 +58,20 @@ export function LoginPanel({ variant, googleEnabled, demoMode, callbackUrl, erro
   const isStaff = variant === "staff";
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="text-2xl">{isStaff ? "Staff login" : "Smart Canteen"}</CardTitle>
-        <CardDescription>
-          {isStaff ? "Food servers and cashiers: scan your staff ID card." : "Log in to see the live menu and order."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5">
+    <div className="flex w-full max-w-md flex-col gap-6">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <span className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+          <UtensilsCrossed className="size-6" aria-hidden />
+        </span>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-semibold tracking-tight">{isStaff ? "Staff login" : "Smart Canteen"}</h1>
+          <p className="text-sm text-muted-foreground sm:text-base">
+            {isStaff ? "Food servers and cashiers: scan your staff ID card." : "Log in to see the live menu and order."}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-5 rounded-xl border bg-card p-5 shadow-sm sm:p-6">
         {message && (
           <Alert variant="destructive">
             <AlertDescription>{message}</AlertDescription>
@@ -63,12 +79,15 @@ export function LoginPanel({ variant, googleEnabled, demoMode, callbackUrl, erro
         )}
 
         {googleEnabled && (
-          <Button size="lg" variant="outline" disabled={busy} onClick={() => signIn("google", { redirectTo: target })}>
-            Continue with Google {isStaff ? "" : "(college email)"}
-          </Button>
+          <>
+            <Button size="lg" variant="outline" disabled={busy} onClick={() => signIn("google", { redirectTo: target })}>
+              Continue with Google {isStaff ? "" : "(college email)"}
+            </Button>
+            <Divider label="or" />
+          </>
         )}
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <p className="text-sm font-medium">{isStaff ? "Scan staff ID card QR" : "Scan college ID card QR"}</p>
           <QrScanner
             startLabel={isStaff ? "Scan staff ID card" : "Scan college ID card"}
@@ -78,13 +97,12 @@ export function LoginPanel({ variant, googleEnabled, demoMode, callbackUrl, erro
         </div>
 
         {demoMode && (
-          <div className="flex flex-col gap-2 border-t pt-4">
-            <p className="text-xs text-muted-foreground">Demo mode</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-col gap-3">
+            <Divider label="Demo mode" />
+            <div className="grid grid-cols-1 gap-2">
               {DEMO_ROLES.map((d) => (
                 <Button
                   key={d.role}
-                  size="sm"
                   variant="secondary"
                   disabled={busy}
                   onClick={() => credentialsLogin("demo", { role: d.role })}
@@ -95,15 +113,25 @@ export function LoginPanel({ variant, googleEnabled, demoMode, callbackUrl, erro
             </div>
           </div>
         )}
+      </div>
 
-        <p className="text-center text-sm text-muted-foreground">
-          {isStaff ? (
-            <a className="underline" href="/login">Student login</a>
-          ) : (
-            <a className="underline" href="/staff/login">Staff login</a>
-          )}
-        </p>
-      </CardContent>
-    </Card>
+      <p className="text-center text-sm text-muted-foreground">
+        {isStaff ? (
+          <>
+            Student?{" "}
+            <a className="font-medium text-foreground underline underline-offset-4" href="/login">
+              Student login
+            </a>
+          </>
+        ) : (
+          <>
+            Canteen staff?{" "}
+            <a className="font-medium text-foreground underline underline-offset-4" href="/staff/login">
+              Staff login
+            </a>
+          </>
+        )}
+      </p>
+    </div>
   );
 }

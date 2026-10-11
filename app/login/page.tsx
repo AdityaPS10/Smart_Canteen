@@ -10,7 +10,7 @@ export default async function LoginPage({
 }) {
   const sp = await searchParams;
   return (
-    <main className="flex min-h-dvh items-center justify-center p-4">
+    <main className="flex min-h-dvh items-center justify-center bg-muted/40 px-4 py-10">
       <LoginPanel
         variant="student"
         googleEnabled={isGoogleConfigured()}

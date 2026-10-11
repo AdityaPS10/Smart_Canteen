@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CircleCheck, Loader2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { QrScanner } from "@/components/qr-scanner";
 import { fetchJson } from "@/hooks/use-live-data";
@@ -60,21 +61,28 @@ export function ScanClient({ initialToken, canteenId }: { initialToken?: string;
   if (done) {
     return (
       <Alert variant="success">
-        <AlertTitle>Checked in</AlertTitle>
+        <AlertTitle className="flex items-center gap-2">
+          <CircleCheck className="size-4 text-success" aria-hidden /> Checked in
+        </AlertTitle>
         <AlertDescription>You can order until {formatTimeIST(done.expires_at)}. Continuing…</AlertDescription>
       </Alert>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-muted-foreground">Point your camera at the QR on the display at the canteen entrance.</p>
+    <div className="flex flex-col gap-4 rounded-xl border bg-card p-5 shadow-xs">
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      {busy ? <p>Checking…</p> : <QrScanner autoStart={!initialToken} startLabel="Scan entrance QR" onResult={validate} />}
+      {busy ? (
+        <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground" role="status">
+          <Loader2 className="size-5 animate-spin" aria-hidden /> Checking the code…
+        </div>
+      ) : (
+        <QrScanner autoStart={!initialToken} startLabel="Scan entrance QR" onResult={validate} />
+      )}
       <p className="text-sm text-muted-foreground">Can&apos;t scan? Order at the cashier.</p>
     </div>
   );

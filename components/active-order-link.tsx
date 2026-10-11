@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { StatusBadge } from "@/components/status-badge";
+import { StatusChip } from "@/components/status-chip";
+import { TokenChip } from "@/components/token-chip";
 import { fetchJson } from "@/hooks/use-live-data";
 import type { OrderStatus } from "@/lib/types";
 
@@ -24,16 +24,18 @@ export function ActiveOrderLink() {
 
   if (!active) return null;
   return (
-    <Link href={`/orders/${active.id}`}>
-      <Card className="flex items-center justify-between gap-3 border-primary/50 p-4 transition-colors hover:bg-muted/50">
-        <div className="flex flex-col gap-1">
-          <span className="font-semibold">
-            Your current order{active.token_number ? ` · Token ${active.token_number}` : ""}
-          </span>
-          <StatusBadge status={active.status} className="w-fit" />
-        </div>
-        <ChevronRight className="text-muted-foreground" />
-      </Card>
+    <Link
+      href={`/orders/${active.id}`}
+      className="group flex items-center gap-4 rounded-xl border-2 border-foreground/80 bg-card p-4 shadow-sm transition-colors hover:bg-accent"
+    >
+      {active.token_number ? (
+        <TokenChip token={active.token_number} size="md" tone={active.status === "READY" ? "success" : "solid"} />
+      ) : null}
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <span className="font-semibold">Your current order</span>
+        <StatusChip status={active.status} />
+      </div>
+      <ChevronRight className="size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
     </Link>
   );
 }

@@ -78,27 +78,27 @@ export function QrScanner({ onResult, startLabel = "Scan QR", autoStart = false,
     <div className="flex flex-col gap-3">
       <div
         id={regionId}
-        className={active ? "w-full max-w-sm mx-auto overflow-hidden rounded-lg border" : "hidden"}
+        className={active ? "mx-auto w-full max-w-sm overflow-hidden rounded-xl border-2 border-foreground/80 bg-muted" : "hidden"}
       />
       <div id={fileRegionId} className="hidden" />
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {active ? (
-          <Button type="button" variant="outline" onClick={() => setActive(false)}>
+          <Button type="button" size="lg" variant="outline" onClick={() => setActive(false)}>
             Stop camera
           </Button>
         ) : (
-          <Button type="button" onClick={() => setActive(true)} disabled={disabled}>
+          <Button type="button" size="lg" onClick={() => setActive(true)} disabled={disabled}>
             <Camera /> {startLabel}
           </Button>
         )}
-        <Button type="button" variant="outline" asChild disabled={disabled}>
+        <Button type="button" size="lg" variant="outline" asChild disabled={disabled}>
           <label className="cursor-pointer">
             <ImageUp /> From photo
             <input type="file" accept="image/*" className="hidden" onChange={onFile} disabled={disabled} />
           </label>
         </Button>
       </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      {error && <p className="text-sm font-medium text-danger">{error}</p>}
     </div>
   );
 }

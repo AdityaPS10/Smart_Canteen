@@ -2,28 +2,32 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-const alertVariants = cva("relative w-full rounded-lg border px-4 py-3 text-sm", {
-  variants: {
-    variant: {
-      default: "bg-card text-card-foreground",
-      destructive: "border-destructive/50 text-destructive bg-destructive/5",
-      success: "border-success/50 bg-success/10",
-      warning: "border-warning/60 bg-warning/15",
+// Status alerts: a strong left edge in the status colour; body text stays foreground for contrast.
+const alertVariants = cva(
+  "relative w-full rounded-lg border border-l-4 bg-card px-4 py-3 text-sm text-card-foreground shadow-xs",
+  {
+    variants: {
+      variant: {
+        default: "border-l-foreground",
+        destructive: "border-danger/40 border-l-danger bg-danger/5",
+        success: "border-success/40 border-l-success bg-success/5",
+        warning: "border-warning/60 border-l-warning bg-warning/10",
+      },
     },
+    defaultVariants: { variant: "default" },
   },
-  defaultVariants: { variant: "default" },
-});
+);
 
 function Alert({ className, variant, ...props }: React.ComponentProps<"div"> & VariantProps<typeof alertVariants>) {
   return <div role="alert" className={cn(alertVariants({ variant }), className)} {...props} />;
 }
 
 function AlertTitle({ className, ...props }: React.ComponentProps<"h5">) {
-  return <h5 className={cn("mb-1 font-semibold leading-none", className)} {...props} />;
+  return <h5 className={cn("mb-1 font-semibold leading-tight", className)} {...props} />;
 }
 
 function AlertDescription({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("text-sm", className)} {...props} />;
+  return <div className={cn("text-sm leading-relaxed", className)} {...props} />;
 }
 
 export { Alert, AlertTitle, AlertDescription };
